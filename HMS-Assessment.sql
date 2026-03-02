@@ -90,6 +90,7 @@ SELECT A.APPT_ID,
 FROM APPOINTMENT A
     JOIN PATIENT P ON A.Patient_ID = P.Patient_ID
 	JOIN DOCTOR D ON A.Doctor_ID = D.Doctor_ID
+WHERE A.Status = 'scheduled'
 ORDER BY A.Date, A.Time
  GO
 
