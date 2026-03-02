@@ -1,0 +1,384 @@
+-- ============================================
+-- Hospital Management System - Sample Data queries
+-- ============================================
+
+USE HospitalManagementSystem;
+GO
+
+-- ============================================
+-- SECTION 1: UPDATE STATEMENTS (5 Examples)
+-- ============================================
+
+-- UPDATE Example 1: Very Easy - Update a single column for one patient
+-- Scenario: Patient changed their phone number
+UPDATE PATIENT
+SET Phone_no = '0100000001'
+WHERE Patient_ID = 1;
+GO
+
+-- UPDATE Example 2: Easy - Update multiple columns for one record
+-- Scenario: Patient moved to a new address and changed email
+UPDATE PATIENT
+SET Address = '999 New Address St, Cairo',
+    Email = 'newemail@example.com'
+WHERE Patient_ID = 2;
+GO
+
+-- UPDATE Example 3: Below Medium - Update with a condition
+-- Scenario: Change all 'Scheduled' appointments to 'Confirmed' for a specific doctor
+UPDATE APPOINTMENT
+SET Status = 'Completed'
+WHERE Doctor_ID = 1 AND Status = 'Scheduled';
+GO
+
+-- UPDATE Example 4: Medium - Update with calculation
+-- Scenario: Give 5% discount on all services in Pediatrics department
+UPDATE SERVICE
+SET Unit_price = Unit_price * 0.95
+WHERE Dept_ID = 4;
+GO
+
+-- UPDATE Example 5: Hard - Update based on data from another table
+-- Scenario: Mark all bills as 'Overdue' if due date has passed and status is still 'Pending'
+UPDATE BILLING
+SET Payment_status = 'Overdue'
+WHERE Due_date < GETDATE() 
+  AND Payment_status = 'Pending';
+GO
+
+
+-- ============================================
+-- SECTION 2: DELETE STATEMENTS (5 Examples)
+-- ============================================
+
+-- DELETE Example 1: Very Easy - Delete one specific record by ID
+-- Scenario: Delete a cancelled appointment
+DELETE FROM APPOINTMENT
+WHERE APPT_ID = 32;
+GO
+
+-- DELETE Example 2: Easy - Delete records with simple condition
+-- Scenario: Delete all No-Show appointments
+DELETE FROM APPOINTMENT
+WHERE Status = 'No-Show';
+GO
+
+-- DELETE Example 3: Below Medium - Delete with date condition
+-- Scenario: Delete appointments older than 1 year
+DELETE FROM APPOINTMENT
+WHERE Date < DATEADD(YEAR, -1, GETDATE());
+GO
+
+-- DELETE Example 4: Medium - Delete with multiple conditions
+-- Scenario: Delete cancelled appointments from January 2024
+DELETE FROM APPOINTMENT
+WHERE Status = 'Cancelled' 
+  AND Date >= '2024-01-01' 
+  AND Date < '2024-02-01';
+GO
+
+-- DELETE Example 5: Hard - Delete with subquery
+-- Scenario: Delete all services that have never been used in any appointment
+DELETE FROM SERVICE
+WHERE Service_ID NOT IN (
+    SELECT DISTINCT Service_ID 
+    FROM APP_SERVICE
+);
+GO
+
+
+-- ============================================
+-- SECTION 3: SELECT FROM SINGLE TABLE (5 Examples)
+-- ============================================
+
+-- SELECT Example 1: Very Easy - Select all columns from a table
+-- Scenario: View all patients in the system
+SELECT * 
+FROM PATIENT;
+GO
+
+-- SELECT Example 2: Easy - Select specific columns with WHERE
+-- Scenario: Find all male patients
+SELECT F_name, L_name, Phone_no, Email
+FROM PATIENT
+WHERE Gender = 'M';
+GO
+
+-- SELECT Example 3: Below Medium - Use ORDER BY and TOP
+-- Scenario: Get the 10 oldest patients (by birth date)
+SELECT TOP 10 
+    F_name, 
+    L_name, 
+    DOB, 
+    Phone_no
+FROM PATIENT
+ORDER BY DOB ASC;
+GO
+
+-- SELECT Example 4: Medium - Use GROUP BY and COUNT
+-- Scenario: Count how many patients we have for each blood group
+SELECT 
+    Blood_group, 
+    COUNT(*) AS Patient_Count
+FROM PATIENT
+GROUP BY Blood_group
+ORDER BY Patient_Count DESC;
+GO
+
+-- SELECT Example 5: Hard - Use GROUP BY with HAVING
+-- Scenario: Find blood groups that have more than 2 patients
+SELECT 
+    Blood_group, 
+    COUNT(*) AS Patient_Count
+FROM PATIENT
+GROUP BY Blood_group
+HAVING COUNT(*) > 2
+ORDER BY Patient_Count DESC;
+GO
+
+
+-- ============================================
+-- SECTION 4: SELECT WITH JOINS (4 Examples)
+-- ============================================
+
+-- JOIN Example 1: Very Easy - Simple INNER JOIN between 2 tables
+-- Scenario: Show appointments with patient names
+SELECT 
+    a.APPT_ID,
+    a.Date,
+    a.Time,
+    p.F_name,
+    p.L_name
+FROM APPOINTMENT a
+INNER JOIN PATIENT p ON a.Patient_ID = p.Patient_ID;
+GO
+
+-- JOIN Example 2: Easy - JOIN with WHERE clause
+-- Scenario: Show completed appointments with patient names
+SELECT 
+    a.APPT_ID,
+    a.Date,
+    p.F_name + ' ' + p.L_name AS Patient_Name,
+    a.Status
+FROM APPOINTMENT a
+INNER JOIN PATIENT p ON a.Patient_ID = p.Patient_ID
+WHERE a.Status = 'Completed';
+GO
+
+-- JOIN Example 3: Below Medium - JOIN 3 tables
+-- Scenario: Show appointments with patient and doctor names
+SELECT 
+    a.APPT_ID,
+    a.Date,
+    a.Time,
+    p.F_name + ' ' + p.L_name AS Patient_Name,
+    d.Name AS Doctor_Name
+FROM APPOINTMENT a
+INNER JOIN PATIENT p ON a.Patient_ID = p.Patient_ID
+INNER JOIN DOCTOR d ON a.Doctor_ID = d.Doctor_ID
+ORDER BY a.Date;
+GO
+
+
+-- JOIN Example 4: Hard - Multiple JOINs with aggregation
+-- Scenario: Show total revenue generated by each department
+SELECT 
+    dept.Dept_name,
+    COUNT(a.APPT_ID) AS Total_Appointments,
+    SUM(b.Total_amount) AS Total_Revenue
+FROM DEPARTMENT dept
+INNER JOIN DOCTOR d ON dept.Dept_ID = d.Dept_ID
+INNER JOIN APPOINTMENT a ON d.Doctor_ID = a.Doctor_ID
+INNER JOIN BILLING b ON a.APPT_ID = b.APPT_ID
+WHERE b.Payment_status = 'Paid'
+GROUP BY dept.Dept_ID, dept.Dept_name
+ORDER BY Total_Revenue DESC;
+GO
+
+
+-- ============================================
+-- SECTION 5: AGGREGATION FUNCTIONS (4 Examples)
+-- ============================================
+
+-- AGGREGATION Example 1: Very Easy - Simple COUNT
+-- Scenario: How many patients do we have?
+SELECT COUNT(*) AS Total_Patients
+FROM PATIENT;
+GO
+
+-- AGGREGATION Example 2: Easy - SUM and AVG
+-- Scenario: Calculate total and average billing amounts
+SELECT 
+    SUM(Total_amount) AS Total_Revenue,
+    AVG(Total_amount) AS Average_Bill
+FROM BILLING;
+GO
+
+-- AGGREGATION Example 3: Below Medium - MIN and MAX with WHERE
+-- Scenario: Find cheapest and most expensive services
+SELECT 
+    MIN(Unit_price) AS Cheapest_Service,
+    MAX(Unit_price) AS Most_Expensive_Service
+FROM SERVICE
+WHERE Service_type = 'Lab Test';
+GO
+
+-- AGGREGATION Example 4: Medium - COUNT with GROUP BY
+-- Scenario: Count appointments by status
+SELECT 
+    Status,
+    COUNT(*) AS Count_Appointments
+FROM APPOINTMENT
+GROUP BY Status
+ORDER BY Count_Appointments DESC;
+GO
+
+
+
+
+-- ============================================
+-- SECTION 6: SUBQUERY EXAMPLES (3 Examples)
+-- ============================================
+
+-- SUBQUERY Example 1: Very Easy - Subquery in WHERE clause
+-- Scenario: Find patients who live in the same city as patient ID 1
+SELECT F_name, L_name, Address
+FROM PATIENT
+WHERE Address LIKE '%' + (SELECT Address FROM PATIENT WHERE Patient_ID = 1) + '%';
+GO
+
+-- SUBQUERY Example 2: Easy - Simple IN subquery
+-- Scenario: Find all doctors who work in Cardiology or Neurology
+SELECT Name, Specialization
+FROM DOCTOR
+WHERE Dept_ID IN (
+    SELECT Dept_ID 
+    FROM DEPARTMENT 
+    WHERE Dept_name IN ('Cardiology', 'Neurology')
+);
+GO
+
+-- SUBQUERY Example 3: Below Medium - Subquery with comparison
+-- Scenario: Find services more expensive than average
+SELECT 
+    Service_name, 
+    Unit_price,
+    (SELECT AVG(Unit_price) FROM SERVICE) AS Avg_Price
+FROM SERVICE
+WHERE Unit_price > (SELECT AVG(Unit_price) FROM SERVICE)
+ORDER BY Unit_price DESC;
+GO
+
+
+
+
+
+-- ============================================
+-- SECTION 7: RANKING FUNCTIONS (3 Examples)
+-- ============================================
+
+-- RANK Example 1: Easy - ROW_NUMBER() simple ranking
+-- Scenario: Number all doctors by their years of experience
+SELECT 
+    ROW_NUMBER() OVER (ORDER BY Years_of_experience DESC) AS Rank,
+    Doctor_ID,
+    Name,
+    Years_of_experience
+FROM DOCTOR;
+GO
+
+-- RANK Example 2: Medium - RANK() with partition
+-- Scenario: Rank doctors within each department by experience
+SELECT 
+    dept.Dept_name,
+    d.Name,
+    d.Years_of_experience,
+    RANK() OVER (PARTITION BY d.Dept_ID ORDER BY d.Years_of_experience DESC) AS Rank_In_Department
+FROM DOCTOR d
+INNER JOIN DEPARTMENT dept ON d.Dept_ID = dept.Dept_ID
+ORDER BY dept.Dept_name, Rank_In_Department;
+GO
+
+
+
+-- ============================================
+-- SECTION: TRANSACTIONS (3 Examples )
+-- ============================================
+
+-- TRANSACTION Example 1: Easy - Simple INSERT with COMMIT
+-- Scenario: Add a new patient to the system
+-- All changes are saved permanently
+
+BEGIN TRANSACTION;
+
+INSERT INTO PATIENT (F_name, L_name, Phone_no, Email, DOB, Blood_group, Gender)
+VALUES ('Sara', 'Ahmed', '0166666666', 'sara.ahmed@email.com', '1995-08-20', 'B+', 'F');
+
+COMMIT TRANSACTION;
+
+PRINT 'Transaction 1: New patient added successfully!';
+GO
+
+-- ============================================
+
+-- TRANSACTION Example 2: Medium - Multiple INSERTs with COMMIT
+-- Scenario: Add a new appointment AND create its bill together
+-- Both operations succeed together
+
+BEGIN TRANSACTION;
+
+-- First: Create the appointment
+INSERT INTO APPOINTMENT (Date, Time, Status, Appointment_type, Reason, Patient_ID, Doctor_ID)
+VALUES ('2024-03-25', '11:00:00', 'Scheduled', 'Consultation', 'Regular checkup', 4, 2);
+
+-- Second: Create the bill (using the appointment we just created)
+-- Note: APPT_ID 41 is the next auto-generated ID
+INSERT INTO BILLING (Bill_date, Total_amount, Payment_status, Due_date, APPT_ID, Patient_ID)
+VALUES (GETDATE(), 800.00, 'Pending', '2024-04-10', 41, 4);
+
+COMMIT TRANSACTION;
+
+PRINT 'Transaction 2: Appointment and bill created successfully!';
+GO
+
+-- ============================================
+
+-- TRANSACTION Example 3: Easy - Simple UPDATE with COMMIT
+-- Scenario: Update patient contact information
+-- Changes are saved permanently
+
+BEGIN TRANSACTION;
+
+UPDATE PATIENT
+SET Phone_no = '0177777777',
+    Email = 'updated.email@example.com'
+WHERE Patient_ID = 6;
+
+COMMIT TRANSACTION;
+
+PRINT 'Transaction 3: Patient information updated successfully!';
+GO
+
+-- ============================================
+
+-- TRANSACTION Example 4: Hard - ROLLBACK to undo changes
+-- Scenario: We make changes but decide NOT to save them
+-- Everything is undone (cancelled)
+
+BEGIN TRANSACTION;
+
+-- Make some updates
+UPDATE SERVICE
+SET Unit_price = Unit_price * 2
+WHERE Dept_ID = 1;
+
+-- Oops! That doubled all prices - let's undo it!
+ROLLBACK TRANSACTION;
+
+PRINT 'Transaction 4: Price changes were rolled back (cancelled)!';
+GO
+
+
+
+
+
