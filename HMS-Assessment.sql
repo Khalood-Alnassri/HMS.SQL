@@ -83,7 +83,7 @@ GO
 SELECT A.APPT_ID,
        A.Date,
 	   A.Time, 
-	   P.F_name + '' + P.L_name AS Patient_full_name,
+	   P.F_name + ' ' + P.L_name AS Patient_full_name,
 	   P.Phone_no,
 	   D.Name,
 	   D.Specialization
@@ -112,8 +112,8 @@ FROM APPOINTMENT A
    JOIN DEPARTMENT Dep ON D.Dept_ID = Dep.Dept_ID
    LEFT JOIN DOCTOR N ON Dep.Manager_ID = N.Doctor_ID
    GROUP BY D.Name, Dep.Dept_name, N.Name
-   HAVING COUNT (APPT_ID) >= 1
-   ORDER BY (SELECT COUNT (*) FROM APPOINTMENT) DESC
+   HAVING COUNT (A.APPT_ID) >= 1
+   ORDER BY Appointment_no DESC
 GO
 
 -- SCENARIO 8
@@ -342,11 +342,11 @@ BEGIN TRANSACTION;
 
 -- Create the appointment
 INSERT INTO APPOINTMENT (Date, Time, Status, Appointment_type, Reason, Patient_ID, Doctor_ID)
-VALUES ('2024-03-28', '16:00:00', 'Scheduled', 'Routine', 'Annual physical examination', 12, 4);
+VALUES ('2024-03-28', '18:00:00', 'Scheduled', 'Routine', 'Annual physical examination', 12, 4);
 
 -- Create the bill
 INSERT INTO BILLING (Bill_date, Total_amount, Payment_status, Due_date, APPT_ID, Patient_ID)
-VALUES (GETDATE(), 500.00, 'Pending', '2024-03-28', 42, 12);
+VALUES (GETDATE(), 500.00, 'Pending', '2024-04-15', SCOPE_IDENTITY (), 12);
 
 COMMIT TRANSACTION;
 
